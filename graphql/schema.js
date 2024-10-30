@@ -11,10 +11,6 @@ const schema = buildSchema(`
         wordtype: String
         definition: String
     }
-
-    type Mutation {
-        incrementPopularSearch(word: String!): String
-    }
 `)
 
 module.exports = schema;
