@@ -8,7 +8,16 @@ const schema = require('./graphql/schema');
 const resolvers = require('./graphql/resolvers');
 const generateText = require('./openai/text');
 const generateAudio = require('./openai/audio');
-const generateImage = require('./openai/image.js')
+const generateImage = require('./openai/image.js');
+
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary with credentials
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 app.use(cors());
@@ -90,20 +99,24 @@ app.use(
   })
 );
 
-// Image generation route
 app.post('/generate-image', async (req, res) => {
   try {
     const { input } = req.body;
     if (!input) return res.status(400).json({ error: 'Input text is required.' });
 
-    // Call the generateImage function to get the image URL
+    // Generate image URL using your generateImage function
     const imageUrl = await generateImage(input);
-    
-    // Send the image URL as the response
-    res.json({ imageUrl });
+
+    // Upload the image URL to Cloudinary
+    const uploadedImage = await cloudinary.uploader.upload(imageUrl, {
+      folder: 'generated_images', // Optional folder in Cloudinary
+    });
+
+    // Send back the secure Cloudinary URL
+    res.json({ imageUrl: uploadedImage.secure_url });
   } catch (error) {
-    console.error('Error generating image:', error);
-    res.status(500).json({ error: 'Error generating image.' });
+    console.error('Error generating or uploading image:', error);
+    res.status(500).json({ error: 'Error generating or uploading image.' });
   }
 });
 
